@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geronimo Stilton - Storie Audio</title>
+    
+    <!-- Meta tag per PWA e Schermo Intero -->
+    <meta name="theme-color" content="#8c2a1c">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Storie Stilton">
+    
+    <!-- Manifest embedded direttamente in Data URI per unico file HTML -->
+    <link rel="manifest" href='data:application/manifest+json,{
+        "name": "Geronimo Stilton - Storie Audio",
+        "short_name": "Storie Stilton",
+        "start_url": "./index.html",
+        "display": "standalone",
+        "background_color": "#fdf6e2",
+        "theme_color": "#8c2a1c",
+        "icons": [
+            {
+                "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧀</text></svg>",
+                "sizes": "192x192 512x512",
+                "type": "image/svg+xml"
+            }
+        ]
+    }'>
+
+    <style>
+        :root {
+            --bg-color: #fdf6e2;
+            --header-bg: #8c2a1c;
+            --card-bg: #ffffff;
+            --accent-yellow: #f2c94c;
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        header {
+            background-color: var(--header-bg);
+            color: white;
+            text-align: center;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 28px;
+            letter-spacing: 1px;
+        }
+
+        .container {
+            padding: 20px;
+            padding-bottom: 150px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.12);
+            border: 3px solid var(--accent-yellow);
+            transition: transform 0.2s;
+            cursor: pointer;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:active {
+            transform: scale(0.97);
+        }
+
+        .card-cover {
+            width: 100%;
+            height: 150px;
+            border-bottom: 2px solid var(--accent-yellow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .card-cover .icon {
+            font-size: 50px;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .card-cover .badge {
+            background: rgba(0,0,0,0.2);
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .card-title {
+            padding: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--text-color);
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .player-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #ffffff;
+            border-top: 4px solid var(--header-bg);
+            padding: 15px 20px;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .player-info {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--header-bg);
+            text-align: center;
+        }
+
+        audio {
+            width: 100%;
+            max-width: 600px;
+            height: 45px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🧀 Storie di Geronimo Stilton 🧀</h1>
+    </header>
+
+    <div class="container" id="grid"></div>
+
+    <div class="player-bar">
+        <div class="player-info" id="current-title">Scegli una storia per iniziare</div>
+        <audio id="audio-player" controls preload="auto">
+            Il tuo browser non supporta l'audio.
+        </audio>
+    </div>
+
+    <script>
+        // Sostituisci "storia_ESATTO.mp4" (o .mp3) con il nome del file caricato su GitHub Release
+        const baseUrl = "https://github.com/jjkk1987/familystorie/releases/download/v1.0/";
+
+        const storie = [
+            { titolo: "Il Misterioso Manoscritto di Nostratopus", file: baseUrl + "storia_01.mp4", icon: "📜", color: "#8B5A2B" },
+            { titolo: "Il Mistero del Tesoro Scomparso", file: baseUrl + "storia_02.mp4", icon: "🗺️", color: "#D2691E" },
+            { titolo: "Il mio amico Dante", file: baseUrl + "storia_03.mp4", icon: "🏛️", color: "#4682B4" },
+            { titolo: "L'Amore è Come il Formaggio", file: baseUrl + "storia_04.mp4", icon: "🧀", color: "#E6B800" },
+            { titolo: "Benvenuti a Roccataccagna", file: baseUrl + "storia_05.mp4", icon: "🏰", color: "#708090" },
+            { titolo: "Quattro Topi nella Giungla Nera", file: baseUrl + "storia_06.mp4", icon: "🌴", color: "#2E8B57" },
+            { titolo: "Finale di Super Coppa a Topazia", file: baseUrl + "storia_07.mp4", icon: "🏆", color: "#DAA520" },
+            { titolo: "Il galeone dei gatti pirati", file: baseUrl + "storia_08.mp4", icon: "🏴‍☠️", color: "#2F4F4F" },
+            { titolo: "La notte delle zucche mannare", file: baseUrl + "storia_09.mp4", icon: "🎃", color: "#FF7F50" },
+            { titolo: "Il Mistero dell'Occhio di Smeraldo", file: baseUrl + "storia_10.mp4", icon: "💎", color: "#009E60" },
+            { titolo: "Inseguimento a New York", file: baseUrl + "storia_11.mp4", icon: "🗽", color: "#4169E1" },
+            { titolo: "Il giallo del pappagallo", file: baseUrl + "storia_12.mp4", icon: "🦜", color: "#FF8C00" },
+            { titolo: "Il tempio del rubino di fuoco", file: baseUrl + "storia_13.mp4", icon: "🔥", color: "#B22222" },
+            { titolo: "Un Camper Color Formaggio", file: baseUrl + "storia_14.mp4", icon: "🚐", color: "#FFD700" },
+            { titolo: "Lo strano caso del ladro di cioccolato", file: baseUrl + "Geronimo.Stilton.-.Lo.strano.caso.del.ladro.di.cioccolato.mp4", icon: "🍫", color: "#5C4033" }
+        ];
+
+        const grid = document.getElementById('grid');
+        const player = document.getElementById('audio-player');
+        const currentTitle = document.getElementById('current-title');
+
+        storie.forEach((storia, index) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.onclick = () => playStory(storia);
+
+            card.innerHTML = `
+                <div class="card-cover" style="background-color: ${storia.color};">
+                    <div class="icon">${storia.icon}</div>
+                    <div class="badge">Storia ${index + 1}</div>
+                </div>
+                <div class="card-title">${storia.titolo}</div>
+            `;
+
+            grid.appendChild(card);
+        });
+
+        function playStory(storia) {
+            player.src = storia.file;
+            player.load();
+            
+            currentTitle.textContent = "🎧 In ascolto: " + storia.titolo;
+
+            const playPromise = player.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Autoplay bloccato:", error);
+                    currentTitle.textContent = "▶️ Clicca PLAY in basso per avviare: " + storia.titolo;
+                });
+            }
+
+            // Integrata Media Session API per notifiche e background audio
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: storia.titolo,
+                    artist: 'Geronimo Stilton',
+                    album: 'Storie Audio',
+                    artwork: [
+                        { src: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧀</text></svg>', sizes: '512x512', type: 'image/svg+xml' }
+                    ]
+                });
+
+                navigator.mediaSession.setActionHandler('play', () => player.play());
+                navigator.mediaSession.setActionHandler('pause', () => player.pause());
+                navigator.mediaSession.setActionHandler('seekbackward', () => { player.currentTime = Math.max(player.currentTime - 10, 0); });
+                navigator.mediaSession.setActionHandler('seekforward', () => { player.currentTime = Math.min(player.currentTime + 10, player.duration); });
+            }
+        }
+
+        // Registrazione dinamica Service Worker per abilitare installazione PWA
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                self.addEventListener('install', (e) => self.skipWaiting());
+                self.addEventListener('activate', (e) => self.clients.claim());
+                self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));
+            `;
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            
+            navigator.serviceWorker.register(swUrl).catch(err => console.log('SW non registrato:', err));
+        }
+    </script>
+</body>
+</html>
