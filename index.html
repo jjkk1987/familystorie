@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+    <script>
+    // Esempio rapido di blocco PIN
+    const PASS = "sorprenditi26"; // Imposta la tua password
+    if (localStorage.getItem("pwa_auth") !== "ok") {
+      const input = prompt("Inserisci la password:");
+      if (input === PASS) {
+        localStorage.setItem("pwa_auth", "ok");
+      } else {
+        document.body.innerHTML = "<h1>Accesso non autorizzato</h1>";
+        window.stop();
+      }
+    }
+  </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geronimo Stilton - Storie Audio</title>
