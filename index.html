@@ -1,19 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <script>
-    // Esempio rapido di blocco PIN
-    const PASS = "sorprenditi26"; // Imposta la tua password
-    if (localStorage.getItem("pwa_auth") !== "ok") {
-      const input = prompt("Inserisci la password:");
-      if (input === PASS) {
-        localStorage.setItem("pwa_auth", "ok");
-      } else {
-        document.body.innerHTML = "<h1>Accesso non autorizzato</h1>";
-        window.stop();
-      }
-    }
-  </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geronimo Stilton - Storie Audio</title>
@@ -75,7 +62,7 @@
 
         .container {
             padding: 20px;
-            padding-bottom: 150px;
+            padding-bottom: 180px;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
@@ -89,7 +76,7 @@
             overflow: hidden;
             box-shadow: 0 5px 10px rgba(0,0,0,0.12);
             border: 3px solid var(--accent-yellow);
-            transition: transform 0.2s;
+            transition: transform 0.2s, border-color 0.2s;
             cursor: pointer;
             text-align: center;
             display: flex;
@@ -98,6 +85,11 @@
 
         .card:active {
             transform: scale(0.97);
+        }
+
+        .card.active {
+            border-color: var(--header-bg);
+            box-shadow: 0 0 12px rgba(140, 42, 28, 0.4);
         }
 
         .card-cover {
@@ -145,12 +137,13 @@
             right: 0;
             background-color: #ffffff;
             border-top: 4px solid var(--header-bg);
-            padding: 15px 20px;
+            padding: 12px 20px;
             box-shadow: 0 -4px 10px rgba(0,0,0,0.15);
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
+            z-index: 1000;
         }
 
         .player-info {
@@ -160,10 +153,29 @@
             text-align: center;
         }
 
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .autoplay-toggle {
+            font-size: 13px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+
         audio {
             width: 100%;
             max-width: 600px;
-            height: 45px;
+            height: 40px;
         }
     </style>
 </head>
@@ -177,13 +189,20 @@
 
     <div class="player-bar">
         <div class="player-info" id="current-title">Scegli una storia per iniziare</div>
+        
         <audio id="audio-player" controls preload="auto">
             Il tuo browser non supporta l'audio.
         </audio>
+
+        <div class="controls-row">
+            <label class="autoplay-toggle">
+                <input type="checkbox" id="autoplay-next" checked>
+                <span>Riproduci automaticamente la storia successiva ⏭️</span>
+            </label>
+        </div>
     </div>
 
     <script>
-        // Sostituisci "storia_ESATTO.mp4" (o .mp3) con il nome del file caricato su GitHub Release
         const baseUrl = "https://github.com/jjkk1987/familystorie/releases/download/v1.0/";
 
         const storie = [
@@ -204,14 +223,18 @@
             { titolo: "Lo strano caso del ladro di cioccolato", file: baseUrl + "Geronimo.Stilton.-.Lo.strano.caso.del.ladro.di.cioccolato.mp4", icon: "🍫", color: "#5C4033" }
         ];
 
+        let currentIndex = -1;
         const grid = document.getElementById('grid');
         const player = document.getElementById('audio-player');
         const currentTitle = document.getElementById('current-title');
+        const autoplayNext = document.getElementById('autoplay-next');
 
+        // Generazione schede
         storie.forEach((storia, index) => {
             const card = document.createElement('div');
             card.className = 'card';
-            card.onclick = () => playStory(storia);
+            card.id = `card-${index}`;
+            card.onclick = () => playStory(index);
 
             card.innerHTML = `
                 <div class="card-cover" style="background-color: ${storia.color};">
@@ -224,7 +247,17 @@
             grid.appendChild(card);
         });
 
-        function playStory(storia) {
+        function playStory(index) {
+            if (index < 0 || index >= storie.length) return;
+            
+            currentIndex = index;
+            const storia = storie[currentIndex];
+
+            // Evidenzia la scheda attiva
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+            const activeCard = document.getElementById(`card-${index}`);
+            if (activeCard) activeCard.classList.add('active');
+
             player.src = storia.file;
             player.load();
             
@@ -238,7 +271,11 @@
                 });
             }
 
-            // Integrata Media Session API per notifiche e background audio
+            updateMediaSession(storia);
+        }
+
+        // Gestione MediaSession API (schermata di blocco e controlli hardware)
+        function updateMediaSession(storia) {
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.metadata = new MediaMetadata({
                     title: storia.titolo,
@@ -251,12 +288,30 @@
 
                 navigator.mediaSession.setActionHandler('play', () => player.play());
                 navigator.mediaSession.setActionHandler('pause', () => player.pause());
+                navigator.mediaSession.setActionHandler('previoustrack', () => playStory(currentIndex - 1));
+                navigator.mediaSession.setActionHandler('nexttrack', () => playStory(currentIndex + 1));
                 navigator.mediaSession.setActionHandler('seekbackward', () => { player.currentTime = Math.max(player.currentTime - 10, 0); });
-                navigator.mediaSession.setActionHandler('seekforward', () => { player.currentTime = Math.min(player.currentTime + 10, player.duration); });
+                navigator.mediaSession.setActionHandler('seekforward', () => { player.currentTime = Math.min(player.currentTime + 10, player.duration || 0); });
             }
         }
 
-        // Registrazione dinamica Service Worker per abilitare installazione PWA
+        // Sincronizzazione stato riproduzione su schermata di blocco
+        player.addEventListener('play', () => {
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+        });
+
+        player.addEventListener('pause', () => {
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+        });
+
+        // Passaggio automatico alla storia successiva quando la corrente finisce
+        player.addEventListener('ended', () => {
+            if (autoplayNext.checked && currentIndex + 1 < storie.length) {
+                playStory(currentIndex + 1);
+            }
+        });
+
+        // Registrazione dinamica Service Worker per installazione PWA
         if ('serviceWorker' in navigator) {
             const swCode = `
                 self.addEventListener('install', (e) => self.skipWaiting());
